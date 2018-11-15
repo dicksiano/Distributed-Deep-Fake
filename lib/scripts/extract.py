@@ -2,6 +2,7 @@ import youtube_dl
 import os
 import time
 import cv2
+import tqdm
 from face_recognition import face_locations
 
 class Extract:
@@ -24,36 +25,35 @@ class Extract:
 
   def debug_face_recognition(self, info):
     video_file = info['id'] + '.mp4' 
-    path = os.path.join('data', 'video', video_file)
-    vidcap = cv2.VideoCapture(path)
+    video_path = os.path.join('data', 'video', video_file)
+    faces_path = os.path.join('data', 'faces', info['id'])
+    if not os.path.exists(faces_path):
+      os.makedirs(faces_path)
+    vidcap = cv2.VideoCapture(video_path)
 
-    start = time.time()
-    success, img = vidcap.read()
-    img = cv2.resize(img,None,fx=0.5, fy=0.5, interpolation = cv2.INTER_AREA)
+    frame_length = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
+    # start = time.time()
     frame_cnt = 0
-    while success:
-      face_box = face_locations(img, model='cnn')
-      for box in face_box:
-        cv2.rectangle(img,(box[3], box[0]), (box[1], box[2]), (0,255,0),3)
-
-      height, width, channels = img.shape
-      cv2.putText(img, 'Frame ' + str(frame_cnt), (0, height),
-          cv2.FONT_HERSHEY_PLAIN, 1, (255,255,255), 2)
-      
-      cv2.imshow(video_file, img)
-      
-      if cv2.waitKey(25) & 0xFF == ord('q'):
-        break
-      if frame_cnt % 100 == 0:
-        time_elapsed = time.time() - start
-        print('Frame', frame_cnt)
-        print('Shape', img.shape)
-        print('Time Elapsed:', time_elapsed, 's')
-        print('Medium Frame Rate:', frame_cnt / time_elapsed)
-        print()
+    for i in tqdm.tqdm(range(frame_length)):
       success, img = vidcap.read()
       img = cv2.resize(img,None,fx=0.5, fy=0.5, interpolation = cv2.INTER_AREA)
-      frame_cnt += 1
+      face_boxes = face_locations(img, number_of_times_to_upsample = 0, model='cnn')
+      for idx, box in enumerate(face_boxes):
+        top, right, bottom, left = box
+        face_img = img[top:bottom, left:right]
+        face_path = os.path.join(faces_path, str(i)+'_'+str(idx)+'.png')
+        cv2.imwrite(face_path, face_img)
+
+      # for box in face_box:
+      #   cv2.rectangle(img,(box[3], box[0]), (box[1], box[2]), (0,255,0),3)
+
+      # height, width, channels = img.shape
+      # cv2.putText(img, 'Frame ' + str(frame_cnt), (0, height),
+      #     cv2.FONT_HERSHEY_PLAIN, 1, (255,255,255), 2)
+      
+      # cv2.imshow(video_file, img)
+      # if cv2.waitKey(25) & 0xFF == ord('q'):
+      #   break
 
   def process(self):
     videos_info = self.download_videos(self.arguments['links'], self.ydl_opts)
