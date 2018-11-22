@@ -16,8 +16,10 @@ class Parser:
     
     # Extract parser
     self.extract_parser = self.subparsers.add_parser('extract', help='extract faces from videos\
-    provided from web links or data/video/ path')
-    self.extract_parser.add_argument('-t', '--test', type=str, nargs='+', dest='test')
+    provided from web links or data/video/. path')
+    self.extract_parser.add_argument('-n', '--name', type=str, nargs=1, dest='name')
+    self.extract_parser.add_argument('-f', '--face', action='store_true', dest='save_face')
+    self.extract_parser.add_argument('-d', '--debug', action='store_true', dest='debug')
     self.extract_parser.add_argument(type=str, nargs='+', dest='links')
     
     self.vars = vars(self.parser.parse_args())

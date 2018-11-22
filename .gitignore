@@ -1,2 +1,4 @@
 data/*
 already_downloaded
+*/__pycache__
+*/scripts/__pycache__
