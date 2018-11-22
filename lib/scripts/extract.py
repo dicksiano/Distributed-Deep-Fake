@@ -4,7 +4,7 @@ import time
 import cv2
 import numpy as np
 import tqdm
-from face_recognition import face_locations
+from face_recognition import face_locations, face_encodings, compare_faces
 
 class Extract:
   def __init__(self, arguments):
@@ -87,11 +87,30 @@ class Extract:
         save_path = os.path.join(faces_path, info['id']+'.png')
         cv2.imwrite(save_path, face_img)
         break
+    cv2.destroyAllWindows()
 
   def debug_face_recognition(self, info):
-    video_file = info['id'] + '.mp4' 
+    video_file = info['id'] + '.mp4'
     video_path = os.path.join('data', 'video', video_file)
-    faces_path = os.path.join('data', 'faces', info['id'])
+    faces_path = os.path.join('data', 'faces')
+    name = self.arguments['name'][0]
+    if name:
+      faces_path = os.path.join(faces_path, name)
+    faces_path = os.path.join(faces_path, info['id'])
+    if not os.path.exists(faces_path):
+      os.makedirs(faces_path)
+      
+    cmp_faces = False
+    cmp_enconding = None
+    if self.arguments['save_face']:
+      cmp_faces = True
+      compare_path = os.path.join('data', 'faces', 'samples')
+      if name:
+        compare_path = os.path.join(compare_path, name)
+      compare_path = os.path.join(compare_path, info['id']+'.png')
+      cmp_img = cv2.imread(compare_path, 3)
+      cmp_enconding = face_encodings(cmp_img)
+
     if not os.path.exists(faces_path):
       os.makedirs(faces_path)
     vidcap = cv2.VideoCapture(video_path)
@@ -100,14 +119,27 @@ class Extract:
     # start = time.time()
     frame_cnt = 0
     for i in tqdm.tqdm(range(frame_length)):
+      # break
       success, img = vidcap.read()
       img = cv2.resize(img,None,fx=0.5, fy=0.5, interpolation = cv2.INTER_AREA)
-      face_boxes = face_locations(img, number_of_times_to_upsample = 0, model='cnn')
-      for idx, box in enumerate(face_boxes):
-        top, right, bottom, left = box
-        face_img = img[top:bottom, left:right]
-        face_path = os.path.join(faces_path, str(i)+'_'+str(idx)+'.png')
-        cv2.imwrite(face_path, face_img)
+      rgb_img = img[:, :, ::-1] # Conver cv2 BGR to RGB
+      face_boxes = face_locations(rgb_img, number_of_times_to_upsample = 0, model='cnn')
+      face_encs = face_encodings(rgb_img, face_boxes)
+
+      for enconding in face_encs:
+        matches = compare_faces(cmp_enconding, enconding)
+        if True in matches:
+          idx = matches.index(True)
+          box = face_boxes[idx]
+          top, right, bottom, left = box
+          face_img = img[top:bottom, left:right]
+          face_path = os.path.join(faces_path, str(i)+'_'+str(idx)+'.png')
+          cv2.imwrite(face_path, face_img)
+      # for idx, box in enumerate(face_boxes):
+      #   top, right, bottom, left = box
+      #   face_img = img[top:bottom, left:right]
+      #   face_path = os.path.join(faces_path, str(i)+'_'+str(idx)+'.png')
+      #   cv2.imwrite(face_path, face_img)
 
       # for box in face_box:
       #   cv2.rectangle(img,(box[3], box[0]), (box[1], box[2]), (0,255,0),3)
