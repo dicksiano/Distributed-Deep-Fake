@@ -49,11 +49,13 @@ def Decoder():
     return Model( input_, x )
 
 encoder = Encoder()
-decoder_A = Decoder()
-decoder_B = Decoder()
+decoderA = Decoder()
+decoderB = Decoder()
 
-autoencoder_A = Model( Input( shape=IMAGE_SHAPE ), decoder_A( encoder(Input( shape=IMAGE_SHAPE )) ) )
-autoencoder_B = Model( Input( shape=IMAGE_SHAPE ), decoder_B( encoder(Input( shape=IMAGE_SHAPE )) ) )
-autoencoder_A.compile( optimizer=optimizer, loss='mean_absolute_error' )
-autoencoder_B.compile( optimizer=optimizer, loss='mean_absolute_error' )
+input = Input( shape=IMAGE_SHAPE )
+
+autoencoderA = Model( input, decoderA( encoder(input) ) )
+autoencoderB = Model( input, decoderB( encoder(input) ) )
+autoencoderA.compile( optimizer=optimizer, loss='mean_absolute_error' )
+autoencoderB.compile( optimizer=optimizer, loss='mean_absolute_error' )
 
