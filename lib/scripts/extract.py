@@ -9,7 +9,8 @@ from face_recognition import face_locations, face_encodings, compare_faces
 class Extract:
   def __init__(self, arguments):
     self.arguments = arguments
-    print('AQUI Ó', self.arguments)
+    if(self.arguments['debug']):
+      print('List parameters: ', self.arguments)
     path = os.path.join('data', 'video', '%(id)s.%(ext)s')
     self.ydl_opts = {
       'outtmpl': path,
@@ -93,7 +94,7 @@ class Extract:
     video_file = info['id'] + '.mp4'
     video_path = os.path.join('data', 'video', video_file)
     faces_path = os.path.join('data', 'faces')
-    name = self.arguments['name'][0]
+    name = self.arguments['name']
     if name:
       faces_path = os.path.join(faces_path, name)
     faces_path = os.path.join(faces_path, info['id'])
