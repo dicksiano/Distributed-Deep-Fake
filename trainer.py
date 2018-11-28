@@ -2,12 +2,11 @@ import cv2
 import numpy
 import os
 
-from image_augmentation import random_transform
-from image_augmentation import random_warp
+from umeyama import umeyama
 
-from model import autoencoder_A
-from model import autoencoder_B
-from model import encoder, decoderA, decoderB
+from autoencoder import autoencoderA
+from autoencoder import autoencoderB
+from autoencoder import encoder, decoderA, decoderB
 
 NUM_OF_EPOCHS = 1000000
 batchSize = 64
@@ -25,10 +24,10 @@ def loadImages( directory, convert=None ):
 
     if convert:
         loadedImags = ( convert(img) for img in loadedImags )
-
-    imags = numpy.empty( ( len(imgPaths), ) + loadedImags[0].shape, dtype=loadedImags[0].dtype )
-
+    
     for i,image in enumerate( loadedImags ):
+        if i == 0: 
+            imags = numpy.empty( ( len(imgPaths), ) + image.shape, dtype=image.dtype )
         imags[i] = image
     return imags
 
@@ -38,7 +37,7 @@ def updateWeights():
     decoderB.save_weights( "models/decoder_B.h5" )
     print( "/n'Updating weights :)" )
 
-random_transform_args = {
+randomTransform_args = {
     'rotation_range': 10,
     'zoom_range': 0.05,
     'shift_range': 0.05,
@@ -49,8 +48,8 @@ def getTrainingData( images, batchSize ):
     indices = numpy.random.randint( len(images), size=batchSize )
     for i,index in enumerate(indices):
         image = images[index]
-        image = random_transform( image, **random_transform_args )
-        warpedImg, targetImg = random_warp( image )
+        image = randomTransform( image, **randomTransform_args )
+        warpedImg, targetImg = randomWarp( image )
 
         if i == 0:
             warpedImages = numpy.empty( (batchSize,) + warpedImg.shape, warpedImg.dtype )
@@ -76,6 +75,41 @@ def stackImages( images ):
     newShape = [ numpy.prod( imagesShape[x] ) for x in newAxes ]
     return numpy.transpose( images, axes = numpy.concatenate( newAxes ) ).reshape( newShape )
 
+def randomTransform( image, rotation_range, zoom_range, shift_range, random_flip ):
+    h,w = image.shape[0:2]
+    rotation = numpy.random.uniform( -rotation_range, rotation_range )
+    scale = numpy.random.uniform( 1 - zoom_range, 1 + zoom_range )
+    tx = numpy.random.uniform( -shift_range, shift_range ) * w
+    ty = numpy.random.uniform( -shift_range, shift_range ) * h
+    mat = cv2.getRotationMatrix2D( (w//2,h//2), rotation, scale )
+    mat[:,2] += (tx,ty)
+    result = cv2.warpAffine( image, mat, (w,h), borderMode=cv2.BORDER_REPLICATE )
+    if numpy.random.random() < random_flip:
+        result = result[:,::-1]
+    return result
+
+def randomWarp( image ):
+    assert image.shape == (256,256,3)
+    range_ = numpy.linspace( 128-80, 128+80, 5 )
+    mapx = numpy.broadcast_to( range_, (5,5) )
+    mapy = mapx.T
+
+    mapx = mapx + numpy.random.normal( size=(5,5), scale=5 )
+    mapy = mapy + numpy.random.normal( size=(5,5), scale=5 )
+
+    interpMapx = cv2.resize( mapx, (80,80) )[8:72,8:72].astype('float32')
+    interpMapy = cv2.resize( mapy, (80,80) )[8:72,8:72].astype('float32')
+
+    warped_image = cv2.remap( image, interpMapx, interpMapy, cv2.INTER_LINEAR )
+
+    srcPoints = numpy.stack( [ mapx.ravel(), mapy.ravel() ], axis=-1 )
+    dstPoints = numpy.mgrid[0:65:16,0:65:16].T.reshape(-1,2)
+    mat = umeyama( srcPoints, dstPoints, True )[0:2]
+
+    target_image = cv2.warpAffine( image, mat, (64,64) )
+
+    return warped_image, target_image
+
 
 def main():
     imagesA = loadImages( "data/A" ) / 255.0
@@ -90,8 +124,8 @@ def main():
         warpedA, targetA = getTrainingData( imagesA, batchSize ) 
         warpedB, targetB = getTrainingData( imagesB, batchSize )
 
-        lossA = autoencoder_A.train_on_batch( warpedA, targetA )  
-        lossB = autoencoder_B.train_on_batch( warpedB, targetB )
+        lossA = autoencoderA.train_on_batch( warpedA, targetA )  
+        lossB = autoencoderB.train_on_batch( warpedB, targetB )
         print(epoch, ': ', lossA, lossB )
 
         if epoch % 100 == 0:
@@ -99,8 +133,8 @@ def main():
             testA = targetA[0:14]
             testB = targetB[0:14]
 
-        figureA = numpy.stack([ testA, autoencoder_A.predict( testA ), autoencoder_B.predict( testA ), ], axis=1 )
-        figureB = numpy.stack([ testB, autoencoder_B.predict( testB ), autoencoder_A.predict( testB ), ], axis=1 )
+        figureA = numpy.stack([ testA, autoencoderA.predict( testA ), autoencoderB.predict( testA ), ], axis=1 )
+        figureB = numpy.stack([ testB, autoencoderB.predict( testB ), autoencoderA.predict( testB ), ], axis=1 )
 
         figure = numpy.concatenate( [ figureA, figureB ], axis=0 )
         figure = figure.reshape( (4,7) + figure.shape[1:] )
