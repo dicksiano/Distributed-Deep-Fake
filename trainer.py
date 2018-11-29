@@ -133,14 +133,14 @@ def main():
             testA = targetA[0:14]
             testB = targetB[0:14]
 
-        figureA = numpy.stack([ testA, autoencoderA.predict( testA ), autoencoderB.predict( testA ), ], axis=1 )
-        figureB = numpy.stack([ testB, autoencoderB.predict( testB ), autoencoderA.predict( testB ), ], axis=1 )
+#        figureA = numpy.stack([ testA, autoencoderA.predict( testA ), autoencoderB.predict( testA ), ], axis=1 )
+#        figureB = numpy.stack([ testB, autoencoderB.predict( testB ), autoencoderA.predict( testB ), ], axis=1 )
 
-        figure = numpy.concatenate( [ figureA, figureB ], axis=0 )
-        figure = figure.reshape( (4,7) + figure.shape[1:] )
-        figure = stackImages( figure ) 
+#        figure = numpy.concatenate( [ figureA, figureB ], axis=0 )
+#        figure = figure.reshape( (4,7) + figure.shape[1:] )
+#        figure = stackImages( figure ) 
 
-        figure = numpy.clip( figure * 255, 0, 255 ).astype('uint8')
+#        figure = numpy.clip( figure * 255, 0, 255 ).astype('uint8')
 
 if __name__ == "__main__":
     main()
