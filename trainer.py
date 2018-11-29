@@ -8,6 +8,8 @@ from autoencoder import autoencoderA
 from autoencoder import autoencoderB
 from autoencoder import encoder, decoderA, decoderB
 
+from keras.utils.training_utils import multi_gpu_model
+
 NUM_OF_EPOCHS = 1000000
 batchSize = 64
         
@@ -120,12 +122,15 @@ def main():
     print("Loaded", len(imagesA), "images for model A")
     print("Loaded", len(imagesB), "images for model B")
 
+    distributed_autoencoderA = multi_gpu_model(autoencoderA, gpus=2)
+    distributed_autoencoderB = multi_gpu_model(autoencoderB, gpus=2)
+
     for epoch in range(NUM_OF_EPOCHS):
         warpedA, targetA = getTrainingData( imagesA, batchSize ) 
         warpedB, targetB = getTrainingData( imagesB, batchSize )
 
-        lossA = autoencoderA.train_on_batch( warpedA, targetA )  
-        lossB = autoencoderB.train_on_batch( warpedB, targetB )
+        lossA = distributed_autoencoderA.train_on_batch( warpedA, targetA )  
+        lossB = distributed_autoencoderB.train_on_batch( warpedB, targetB )
         print(epoch, ': ', lossA, lossB )
 
         if epoch % 100 == 0:
