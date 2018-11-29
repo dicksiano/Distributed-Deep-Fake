@@ -1,6 +1,7 @@
 import cv2
 import numpy
 import os
+import logging
 
 from umeyama import umeyama
 
@@ -17,6 +18,17 @@ try:
     decoderB.load_weights("models/decoder_B.h5")
 except:
     print("No models loaded!")
+
+def setLogger():
+    LOG_FILENAME = 'weigths.log'
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    ch = logging.FileHandler(LOG_FILENAME)
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s;%(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    return logger
 
 def loadImages( directory, convert=None ):
     imgPaths = [ x.path for x in os.scandir( directory ) if x.name.endswith(".jpg") or x.name.endswith(".png") ]
@@ -120,6 +132,8 @@ def main():
     print("Loaded", len(imagesA), "images for model A")
     print("Loaded", len(imagesB), "images for model B")
 
+    logger = setLogger()
+
     for epoch in range(NUM_OF_EPOCHS):
         warpedA, targetA = getTrainingData( imagesA, batchSize ) 
         warpedB, targetB = getTrainingData( imagesB, batchSize )
@@ -127,11 +141,12 @@ def main():
         lossA = distributed_autoencoderA.train_on_batch( warpedA, targetA )  
         lossB = distributed_autoencoderB.train_on_batch( warpedB, targetB )
         print(epoch, ': ', lossA, lossB )
-
-        if epoch % 100 == 0:
-            updateWeights()
-            testA = targetA[0:14]
-            testB = targetB[0:14]
+        if epoch % 10 == 0:
+            logger.debug(str(lossA)+';'+str(lossB))
+            if epoch % 100 == 0:
+                updateWeights()
+                testA = targetA[0:14]
+                testB = targetB[0:14]
 
 #        figureA = numpy.stack([ testA, autoencoderA.predict( testA ), autoencoderB.predict( testA ), ], axis=1 )
 #        figureB = numpy.stack([ testB, autoencoderB.predict( testB ), autoencoderA.predict( testB ), ], axis=1 )
