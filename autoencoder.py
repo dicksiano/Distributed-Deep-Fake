@@ -6,6 +6,8 @@ from keras.optimizers import Adam
 
 from pixel_shuffler import PixelShuffler
 
+import tensorflow as tf
+
 optimizer = Adam( lr=5e-5, beta_1=0.5, beta_2=0.999 )
 
 IMAGE_SHAPE = (64,64,3)
@@ -48,14 +50,15 @@ def Decoder():
     x = Conv2D( 3, kernel_size=5, padding='same', activation='sigmoid' )(x)
     return Model( input_, x )
 
-encoder = Encoder()
-decoderA = Decoder()
-decoderB = Decoder()
+with tf.device("/cpu:0"):
+    encoder = Encoder()
+    decoderA = Decoder()
+    decoderB = Decoder()
 
-input = Input( shape=IMAGE_SHAPE )
+    input = Input( shape=IMAGE_SHAPE )
 
-autoencoderA = Model( input, decoderA( encoder(input) ) )
-autoencoderB = Model( input, decoderB( encoder(input) ) )
-autoencoderA.compile( optimizer=optimizer, loss='mean_absolute_error' )
-autoencoderB.compile( optimizer=optimizer, loss='mean_absolute_error' )
+    autoencoderA = Model( input, decoderA( encoder(input) ) )
+    autoencoderB = Model( input, decoderB( encoder(input) ) )
+    autoencoderA.compile( optimizer=optimizer, loss='mean_absolute_error' )
+    autoencoderB.compile( optimizer=optimizer, loss='mean_absolute_error' )
 
