@@ -61,8 +61,14 @@ with tf.device("/cpu:0"):
     autoencoderA = Model( input, decoderA( encoder(input) ) )
     autoencoderB = Model( input, decoderB( encoder(input) ) )
 
+# Multi GPU models 
 distributed_autoencoderA = multi_gpu_model(autoencoderA, gpus=2)
 distributed_autoencoderB = multi_gpu_model(autoencoderB, gpus=2)
+
+# Models compilations
+autoencoderA.compile( optimizer=optimizer, loss='mean_absolute_error' )
+autoencoderB.compile( optimizer=optimizer, loss='mean_absolute_error' )
+
 distributed_autoencoderA.compile( optimizer=optimizer, loss='mean_absolute_error' )
 distributed_autoencoderB.compile( optimizer=optimizer, loss='mean_absolute_error' )
 
