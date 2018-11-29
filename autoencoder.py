@@ -7,6 +7,7 @@ from keras.optimizers import Adam
 from pixel_shuffler import PixelShuffler
 
 import tensorflow as tf
+from keras.utils.training_utils import multi_gpu_model
 
 optimizer = Adam( lr=5e-5, beta_1=0.5, beta_2=0.999 )
 
@@ -59,6 +60,9 @@ with tf.device("/cpu:0"):
 
     autoencoderA = Model( input, decoderA( encoder(input) ) )
     autoencoderB = Model( input, decoderB( encoder(input) ) )
-    autoencoderA.compile( optimizer=optimizer, loss='mean_absolute_error' )
-    autoencoderB.compile( optimizer=optimizer, loss='mean_absolute_error' )
+
+distributed_autoencoderA = multi_gpu_model(autoencoderA, gpus=2)
+distributed_autoencoderB = multi_gpu_model(autoencoderB, gpus=2)
+distributed_autoencoderA.compile( optimizer=optimizer, loss='mean_absolute_error' )
+distributed_autoencoderB.compile( optimizer=optimizer, loss='mean_absolute_error' )
 

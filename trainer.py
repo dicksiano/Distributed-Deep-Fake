@@ -4,11 +4,9 @@ import os
 
 from umeyama import umeyama
 
-from autoencoder import autoencoderA
-from autoencoder import autoencoderB
+from autoencoder import distributed_autoencoderA
+from autoencoder import distributed_autoencoderB
 from autoencoder import encoder, decoderA, decoderB
-
-from keras.utils.training_utils import multi_gpu_model
 
 NUM_OF_EPOCHS = 1000000
 batchSize = 64
@@ -121,9 +119,6 @@ def main():
 
     print("Loaded", len(imagesA), "images for model A")
     print("Loaded", len(imagesB), "images for model B")
-
-    distributed_autoencoderA = multi_gpu_model(autoencoderA, gpus=2)
-    distributed_autoencoderB = multi_gpu_model(autoencoderB, gpus=2)
 
     for epoch in range(NUM_OF_EPOCHS):
         warpedA, targetA = getTrainingData( imagesA, batchSize ) 
