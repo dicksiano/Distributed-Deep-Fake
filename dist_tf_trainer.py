@@ -43,8 +43,8 @@ def setModelConfig():
 
 def setClusterConfig():
     return tf.train.ClusterSpec({
-        'ps': ['localhost:2222'],
-        'worker': ['localhost:2223']
+        'ps': ['192.168.0.24:2222'],
+        'worker': ['192.168.0.24:2223', '192.168.0.33:2222']
     })
 
 
