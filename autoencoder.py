@@ -7,6 +7,7 @@ from keras.optimizers import Adam
 from pixel_shuffler import PixelShuffler
 
 import tensorflow as tf
+from tensorflow.python.client import device_lib
 from keras.utils.training_utils import multi_gpu_model
 
 optimizer = Adam( lr=5e-5, beta_1=0.5, beta_2=0.999 )
@@ -51,6 +52,14 @@ def Decoder():
     x = Conv2D( 3, kernel_size=5, padding='same', activation='sigmoid' )(x)
     return Model( input_, x )
 
+def get_available_gpus():
+    local_device_protos = device_lib.list_local_devices()
+    cnt = 0
+    for x in local_device_protos:
+        if x.device_type == 'GPU':
+            cnt += 1
+    return cnt
+
 with tf.device("/cpu:0"):
     encoder = Encoder()
     decoderA = Decoder()
@@ -62,13 +71,15 @@ with tf.device("/cpu:0"):
     autoencoderB = Model( input, decoderB( encoder(input) ) )
 
 # Multi GPU models 
-distributed_autoencoderA = multi_gpu_model(autoencoderA, gpus=4)
-distributed_autoencoderB = multi_gpu_model(autoencoderB, gpus=4)
+if get_available_gpus() > 1:
+    distributed_autoencoderA = multi_gpu_model(autoencoderA, gpus=4)
+    distributed_autoencoderB = multi_gpu_model(autoencoderB, gpus=4)
 
 # Models compilations
 autoencoderA.compile( optimizer=optimizer, loss='mean_absolute_error' )
 autoencoderB.compile( optimizer=optimizer, loss='mean_absolute_error' )
 
-distributed_autoencoderA.compile( optimizer=optimizer, loss='mean_absolute_error' )
-distributed_autoencoderB.compile( optimizer=optimizer, loss='mean_absolute_error' )
+if get_available_gpus() > 1:
+    distributed_autoencoderA.compile( optimizer=optimizer, loss='mean_absolute_error' )
+    distributed_autoencoderB.compile( optimizer=optimizer, loss='mean_absolute_error' )
 
