@@ -25,9 +25,13 @@ class Extract:
         video_info.append(ydl.extract_info(link, download=True))
     return video_info
 
-  def save_face(self, info):
-    video_file = info['id'] + '.mp4'
-    name = self.arguments['name'][0]
+  def save_face(self, info,isyoutube=True):
+    if isyoutube:
+      vid = info['id']
+    else:
+      vid = info
+    video_file = vid + '.mp4'
+    name = self.arguments['name']
     video_path = os.path.join('data', 'video', video_file)
     faces_path = os.path.join('data', 'faces', 'samples')
     if name:
@@ -85,19 +89,23 @@ class Extract:
       elif key == 13: # enter
         top, right, bottom, left = box
         face_img = src_img[top:bottom, left:right]
-        save_path = os.path.join(faces_path, info['id']+'.png')
+        save_path = os.path.join(faces_path, vid+'.png')
         cv2.imwrite(save_path, face_img)
         break
     cv2.destroyAllWindows()
 
-  def debug_face_recognition(self, info):
-    video_file = info['id'] + '.mp4'
+  def debug_face_recognition(self, info, isyoutube=True):
+    if isyoutube:
+      vid = info['id']
+    else:
+      vid = info
+    video_file = vid + '.mp4'
     video_path = os.path.join('data', 'video', video_file)
     faces_path = os.path.join('data', 'faces')
     name = self.arguments['name']
     if name:
       faces_path = os.path.join(faces_path, name)
-    faces_path = os.path.join(faces_path, info['id'])
+    faces_path = os.path.join(faces_path, vid)
     if not os.path.exists(faces_path):
       os.makedirs(faces_path)
       
@@ -108,7 +116,7 @@ class Extract:
       compare_path = os.path.join('data', 'faces', 'samples')
       if name:
         compare_path = os.path.join(compare_path, name)
-      compare_path = os.path.join(compare_path, info['id']+'.png')
+      compare_path = os.path.join(compare_path, vid +'.png')
       cmp_img = cv2.imread(compare_path, 3)
       cmp_enconding = face_encodings(cmp_img)
 
@@ -153,7 +161,17 @@ class Extract:
       # if cv2.waitKey(25) & 0xFF == ord('q'):
       #   break
 
+  def isVideoOnFolder(self,filename):
+    videopath = os.path.join('data','video', filename+'.mp4')
+    return os.path.isfile(videopath)
+
   def process(self):
+    for filename in self.arguments['links']:
+      if(self.isVideoOnFolder(filename)):
+        if self.arguments['save_face']:
+          self.save_face(filename, isyoutube=False)
+        self.debug_face_recognition(filename, isyoutube=False)
+
     videos_info = self.download_videos(self.arguments['links'], self.ydl_opts)
 
     for info in videos_info:

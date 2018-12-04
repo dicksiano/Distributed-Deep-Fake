@@ -5,8 +5,8 @@ import logging
 
 from umeyama import umeyama
 
-from autoencoder import distributed_autoencoderA
-from autoencoder import distributed_autoencoderB
+from autoencoder import autoencoderA
+from autoencoder import autoencoderB
 from autoencoder import encoder, decoderA, decoderB
 
 NUM_OF_EPOCHS = 1000000
@@ -20,7 +20,7 @@ except:
     print("No models loaded!")
 
 def setLogger():
-    LOG_FILENAME = 'weigths.log'
+    LOG_FILENAME = 'weights.log'
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
     ch = logging.FileHandler(LOG_FILENAME)
@@ -128,7 +128,7 @@ def main():
     imagesB = loadImages( "data/B" ) / 255.0
 
     imagesA += imagesB.mean( axis=(0,1,2) ) - imagesA.mean( axis=(0,1,2) )
-
+    print(imagesA.mean( axis=(0,1,2) ), imagesB.mean( axis=(0,1,2) ))
     print("Loaded", len(imagesA), "images for model A")
     print("Loaded", len(imagesB), "images for model B")
 
@@ -138,8 +138,8 @@ def main():
         warpedA, targetA = getTrainingData( imagesA, batchSize ) 
         warpedB, targetB = getTrainingData( imagesB, batchSize )
 
-        lossA = distributed_autoencoderA.train_on_batch( warpedA, targetA )  
-        lossB = distributed_autoencoderB.train_on_batch( warpedB, targetB )
+        lossA = autoencoderA.train_on_batch( warpedA, targetA )  
+        lossB = autoencoderB.train_on_batch( warpedB, targetB )
         print(epoch, ': ', lossA, lossB )
         if epoch % 10 == 0:
             logger.debug(str(lossA)+';'+str(lossB))
@@ -148,14 +148,18 @@ def main():
                 testA = targetA[0:14]
                 testB = targetB[0:14]
 
-#        figureA = numpy.stack([ testA, autoencoderA.predict( testA ), autoencoderB.predict( testA ), ], axis=1 )
-#        figureB = numpy.stack([ testB, autoencoderB.predict( testB ), autoencoderA.predict( testB ), ], axis=1 )
-
-#        figure = numpy.concatenate( [ figureA, figureB ], axis=0 )
-#        figure = figure.reshape( (4,7) + figure.shape[1:] )
-#        figure = stackImages( figure ) 
-
-#        figure = numpy.clip( figure * 255, 0, 255 ).astype('uint8')
+        figureA = numpy.stack([ testA, autoencoderA.predict( testA ), autoencoderB.predict( testA ), ], axis=1 )
+        figureB = numpy.stack([ testB, autoencoderB.predict( testB ), autoencoderA.predict( testB ), ], axis=1 )
+ 
+        figure = numpy.concatenate( [ figureA, figureB ], axis=0 )
+        figure = figure.reshape( (4,7) + figure.shape[1:] )
+        figure = stackImages( figure ) 
+ 
+        figure = numpy.clip( figure * 255, 0, 255 ).astype('uint8')
+        cv2.imshow('Figure', figure)
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
+            break
 
 if __name__ == "__main__":
     main()
