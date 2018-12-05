@@ -5,9 +5,9 @@ import logging
 
 from umeyama import umeyama
 
-from autoencoder import distributed_autoencoderA
-from autoencoder import distributed_autoencoderB
-from autoencoder import encoder, decoderA, decoderB
+from autoencoder import getAutoencoders
+
+encoder, decoderA, decoderB, autoencoderA, autoencoderB = getAutoencoders()
 
 NUM_OF_EPOCHS = 1000000
 batchSize = 64
@@ -138,8 +138,8 @@ def main():
         warpedA, targetA = getTrainingData( imagesA, batchSize ) 
         warpedB, targetB = getTrainingData( imagesB, batchSize )
 
-        lossA = distributed_autoencoderA.train_on_batch( warpedA, targetA )  
-        lossB = distributed_autoencoderB.train_on_batch( warpedB, targetB )
+        lossA = autoencoderA.train_on_batch( warpedA, targetA )  
+        lossB = autoencoderB.train_on_batch( warpedB, targetB )
         print(epoch, ': ', lossA, lossB )
         if epoch % 10 == 0:
             logger.debug(str(lossA)+';'+str(lossB))

@@ -83,3 +83,9 @@ if get_available_gpus() > 1:
     distributed_autoencoderA.compile( optimizer=optimizer, loss='mean_absolute_error' )
     distributed_autoencoderB.compile( optimizer=optimizer, loss='mean_absolute_error' )
 
+def getAutoencoders():
+    if get_available_gpus() > 1:
+        return encoder, decoderA, decoderB, distributed_autoencoderA, distributed_autoencoderB
+    return encoder, decoderA, decoderB, autoencoderA, autoencoderB
+
+    
